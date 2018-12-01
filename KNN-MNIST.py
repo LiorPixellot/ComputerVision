@@ -67,7 +67,7 @@ def PerformKnn(testData, testLabels, trainData, trainLabels, valData, valLabels)
 
 def PerformSvm(testData, testLabels, trainData, trainLabels, valData, valLabels):
     BestC ,kernel = FindBestCAndKernel(trainData, trainLabels, valData, valLabels)
-    print("best C is %d best kernel is %s" % (BestC,kernel))
+    print("best C is %f best kernel is %s" % (BestC,kernel))
     # re-train our classifier using the best k value and predict the labels of the
     # test data
     model = svm.SVC(kernel=kernel, C=BestC)
