@@ -6,6 +6,7 @@ import numpy as np
 import cv2
 import sklearn
 from sklearn.model_selection import train_test_split
+from sklearn import datasets, svm, metrics
 import struct
 import sys
 
@@ -22,10 +23,11 @@ def main():
     print("IRIS KNN")
     testData, testLabels, trainData, trainLabels, valData, valLabels = ExtructIris(fast)
     PerformKnn(testData, testLabels, trainData, trainLabels, valData, valLabels)
-    
-    print("MNIST KNN")
+    PerformSvm(testData, testLabels, trainData, trainLabels, valData, valLabels)
+    print("\n\n MNIST KNN")
     testData, testLabels, trainData, trainLabels, valData, valLabels = ExtructMNIST(fast)
     PerformKnn(testData, testLabels, trainData, trainLabels, valData, valLabels)
+    PerformSvm(testData, testLabels, trainData, trainLabels, valData, valLabels)
 
 def ExtructIris(fast):
     iris = datasets.load_iris()
@@ -58,8 +60,24 @@ def PerformKnn(testData, testLabels, trainData, trainLabels, valData, valLabels)
     predictions = model.predict(testData)
     # show a final classification report demonstrating the accuracy of the classifier
     # for each of the digits
-    print("EVALUATION ON TESTING DATA")
-    print(classification_report(testLabels, predictions))
+    print("Classification report for classifier %s:\n%s"
+      % (model, metrics.classification_report(testLabels, predictions)))
+    print("Confusion matrix:\n%s" % metrics.confusion_matrix(testLabels, predictions))
+
+
+def PerformSvm(testData, testLabels, trainData, trainLabels, valData, valLabels):
+    BestC ,kernel = FindBestCAndKernel(trainData, trainLabels, valData, valLabels)
+    print("best C is %d best kernel is %s" % (BestC,kernel))
+    # re-train our classifier using the best k value and predict the labels of the
+    # test data
+    model = svm.SVC(kernel=kernel, C=BestC)
+    model.fit(trainData, trainLabels)
+    predictions = model.predict(testData)
+    # show a final classification report demonstrating the accuracy of the classifier
+    # for each of the digits
+    print("Classification report for classifier %s:\n%s"
+      % (model, metrics.classification_report(testLabels, predictions)))
+    print("Confusion matrix:\n%s" % metrics.confusion_matrix(testLabels, predictions))
 
 
 def FindBestK(trainData, trainLabels, valData, valLabels):
@@ -76,6 +94,24 @@ def FindBestK(trainData, trainLabels, valData, valLabels):
             MaxScore = score
             minK = k
     return minK
+
+def FindBestCAndKernel(trainData, trainLabels, valData, valLabels):
+    print("FindBestCAndKernel")
+    MaxScore = 0.0
+    minC = 0
+    minKern = 'linear'
+    # try different values of K for the best classification results
+    for kern in ['linear','rbf','poly']:
+        for c in np.linspace(0.1,1,5):
+            model = svm.SVC(kernel=kern, C=c)
+            model.fit(trainData, trainLabels)
+            score = model.score(valData, valLabels)
+            print("C=",c,"kernel= ",kern,"score=", score)
+            if MaxScore < score:
+                MaxScore = score
+                minC = c
+                minKern = kern
+    return minC , minKern
 
 def loadlocal_mnist(images_path, labels_path):
     with open(labels_path, 'rb') as lbpath:
