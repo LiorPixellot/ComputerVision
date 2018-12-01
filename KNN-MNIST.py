@@ -7,7 +7,7 @@ import cv2
 import sklearn
 from sklearn.model_selection import train_test_split
 import struct
-
+import sys
 
 
 def loadlocal_mnist(images_path, labels_path):
@@ -25,9 +25,6 @@ def loadlocal_mnist(images_path, labels_path):
     labels : [n_samples] numpy array
         Target class labels
     Examples
-    -----------
-    For usage examples, please see
-    http://rasbt.github.io/mlxtend/user_guide/data/loadlocal_mnist/
     """
     with open(labels_path, 'rb') as lbpath:
         magic, n = struct.unpack('>II',
@@ -42,53 +39,56 @@ def loadlocal_mnist(images_path, labels_path):
 
     return images, labels
 
-# load the MNIST digits dataset
-data,target = loadlocal_mnist(
-        images_path='train-images.idx3-ubyte',
-        labels_path='train-labels.idx1-ubyte')
 
-# take the MNIST data and construct the training and testing split, using 75% of the
-# data for training and 25% for testing
-(trainData, testData, trainLabels, testLabels) = train_test_split(np.array(data),
-                                                                  target, test_size=0.25, random_state=42)
 
-# now, let's take 10% of the training data and use that for validation
-(trainData, valData, trainLabels, valLabels) = train_test_split(trainData, trainLabels,
-                                                                test_size=0.1, random_state=84)
 
-# show the sizes of each data split
-print("training data points: {}".format(len(trainLabels)))
-print("validation data points: {}".format(len(valLabels)))
-print("testing data points: {}".format(len(testLabels)))
 
-# initialize the values of k for our k-Nearest Neighbor classifier along with the
-# list of accuracies for each value of k
-kVals = range(1, 30, 2)
-accuracies = []
 
-# loop over various values of `k` for the k-Nearest Neighbor classifier
-for k in range(1, 30, 2):
-    # train the k-Nearest Neighbor classifier with the current value of `k`
-    model = KNeighborsClassifier(n_neighbors=k)
+
+def main():
+    fast = False
+    if(len(sys.argv) > 1 and sys.argv[1]=='fast'):
+        print ("running fast version")
+        fast = True
+
+    trainData, trainLabels = loadlocal_mnist(images_path='train-images.idx3-ubyte',labels_path='train-labels.idx1-ubyte')
+    testData, testLabels = loadlocal_mnist(images_path='t10k-images.idx3-ubyte',labels_path='t10k-labels.idx1-ubyte')
+
+    if fast:
+        # to make it fast we take only the 10% for the training
+        (trainData, valData, trainLabels, valLabels) = train_test_split(trainData, trainLabels,test_size=0.9)
+
+
+    # we take 10% of the training data and use that for validation
+    (trainData, valData, trainLabels, valLabels) = train_test_split(trainData, trainLabels,test_size=0.1)
+
+    BestK = FindBestK(trainData, trainLabels, valData, valLabels)
+
+    print("best K is %d" %( BestK))
+
+    # re-train our classifier using the best k value and predict the labels of the
+    # test data
+    model = KNeighborsClassifier(n_neighbors=BestK)
     model.fit(trainData, trainLabels)
+    predictions = model.predict(testData)
 
-    # evaluate the model and update the accuracies list
-    score = model.score(valData, valLabels)
-    print("k=%d, accuracy=%.2f%%" % (k, score * 100))
-    accuracies.append(score)
+    # show a final classification report demonstrating the accuracy of the classifier
+    # for each of the digits
+    print("EVALUATION ON TESTING DATA")
+    print(classification_report(testLabels, predictions))
 
-# find the value of k that has the largest accuracy
-i = int(np.argmax(accuracies))
-print("k=%d achieved highest accuracy of %.2f%% on validation data" % (kVals[i],
-                                                                       accuracies[i] * 100))
+def FindBestK(trainData, trainLabels, valData, valLabels):
+    MaxScore = 0.0
+    minK = 0
+    # try different values of K for the best classification results
+    for k in range(1, 15, 2):
+        model = KNeighborsClassifier(n_neighbors=k)
+        model.fit(trainData, trainLabels)
+        score = model.score(valData, valLabels)
+        print("k=" ,k,"score=", score)
+        if MaxScore < score:
+            MaxScore = score
+            minK = k
+    return minK
 
-# re-train our classifier using the best k value and predict the labels of the
-# test data
-model = KNeighborsClassifier(n_neighbors=kVals[i])
-model.fit(trainData, trainLabels)
-predictions = model.predict(testData)
-
-# show a final classification report demonstrating the accuracy of the classifier
-# for each of the digits
-print("EVALUATION ON TESTING DATA")
-print(classification_report(testLabels, predictions))
+main()
