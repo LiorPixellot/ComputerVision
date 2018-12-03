@@ -100,7 +100,7 @@ def FindBestCAndKernel(trainData, trainLabels, valData, valLabels):
     MaxScore = 0.0
     minC = 0
     minKern = 'linear'
-    # try different values of K for the best classification results
+    # try different values of C and kernel for the best classification results
     for kern in ['linear','rbf','poly']:
         for c in np.linspace(0.1,1,5):
             model = svm.SVC(kernel=kern, C=c)
