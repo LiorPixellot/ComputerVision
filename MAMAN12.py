@@ -20,11 +20,11 @@ def main():
         print ("running fast version")
         fast = True
 
-    print("IRIS KNN")
+    print("IRIS DATA")
     testData, testLabels, trainData, trainLabels, valData, valLabels = ExtructIris(fast)
     PerformKnn(testData, testLabels, trainData, trainLabels, valData, valLabels)
     PerformSvm(testData, testLabels, trainData, trainLabels, valData, valLabels)
-    print("\n\n MNIST KNN")
+    print("\n\n MNIST DATA")
     testData, testLabels, trainData, trainLabels, valData, valLabels = ExtructMNIST(fast)
     PerformKnn(testData, testLabels, trainData, trainLabels, valData, valLabels)
     PerformSvm(testData, testLabels, trainData, trainLabels, valData, valLabels)
@@ -70,7 +70,7 @@ def GetReports(model, predictions, testLabels):
 def PerformSvm(testData, testLabels, trainData, trainLabels, valData, valLabels):
     BestC ,kernel = FindBestCAndKernel(trainData, trainLabels, valData, valLabels)
     print("best C is %f best kernel is %s" % (BestC,kernel))
-    # re-train our classifier using the best k value and predict the labels of the
+    # re-train our classifier using the best C and kernel values and predict the labels of the
     # test data
     model = svm.SVC(kernel=kernel, C=BestC)
     model.fit(trainData, trainLabels)
